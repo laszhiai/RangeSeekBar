@@ -1,4 +1,4 @@
-package com.li.jacky.rangeseekbar;
+package com.li.jacky.rangeseekbarlibrary;
 
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -30,13 +30,11 @@ public class RangeSeekBar<T extends Number> extends AppCompatImageView {
     private T absoluteMinValue, absoluteMaxValue;
     private double minValuePrim, maxValuePrim;//最值
     private static final int DEFAULT_TEXT_SIZE_IN_DP = 14;
-    private static final int DEFAULT_TEXT_DISTANCE_TO_TOP_IN_DP = 10;
     private static final int SEEKBAR_OUTER_LAYER = 24;
     private static final int SEEKBAR_INNER_LAYER = 8;
     private  int mPadding = 0;
     private int mTextSize;
     private static final int TEXT_OFFSET = 10;
-    private int mDistanceToTop;
     private int mScaledTouchSlop;
     private RectF mRect;
     private final Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -51,9 +49,7 @@ public class RangeSeekBar<T extends Number> extends AppCompatImageView {
     private float mDownMotionX;
     private Thumb pressedThumb = null;
     private boolean mIsDragging;
-    private boolean notifyWhileDragging;
-    public static final int ACTION_POINTER_UP = 0x6, ACTION_POINTER_INDEX_MASK = 0x0000ff00, ACTION_POINTER_INDEX_SHIFT = 8;
-    private int numberRange = 0;
+    public int ACTION_POINTER_INDEX_MASK = 0x0000ff00, ACTION_POINTER_INDEX_SHIFT = 8;
     private int outRadius;
     private int innerRadius;
     private int distance;
@@ -240,7 +236,7 @@ public class RangeSeekBar<T extends Number> extends AppCompatImageView {
                         }
                     }
 
-                    if (notifyWhileDragging && listener != null) {
+                    if (listener != null) {
                         listener.onRangeSeekBarValuesChanged(this, getSelectedMinValue(), getSelectedMaxValue());
                     }
                 }
@@ -263,7 +259,7 @@ public class RangeSeekBar<T extends Number> extends AppCompatImageView {
                 }
                 break;
             case MotionEvent.ACTION_POINTER_DOWN:
-                final int index = event.getPointerCount() - 1;
+                int index = event.getPointerCount() - 1;
                 mDownMotionX = event.getX(index);
                 mActivePointerId = event.getPointerId(index);
                 invalidate();
@@ -274,8 +270,8 @@ public class RangeSeekBar<T extends Number> extends AppCompatImageView {
                 break;
             case MotionEvent.ACTION_CANCEL:
                 if (mIsDragging) {
-                onStopTrackingTouch();
-                setPressed(false);
+                    onStopTrackingTouch();
+                    setPressed(false);
                 }
                 invalidate();
                 break;
@@ -336,7 +332,7 @@ public class RangeSeekBar<T extends Number> extends AppCompatImageView {
 
     /**
      * @param xPosition x坐标
-     * @return      seekbar滑动百分比
+     * @return  seekbar滑动百分比
      */
     private double screenToNormalized(float xPosition) {
         int width = getWidth();
@@ -387,14 +383,6 @@ public class RangeSeekBar<T extends Number> extends AppCompatImageView {
         this.listener = listener;
     }
 
-    public boolean isNotifyWhileDragging() {
-        return notifyWhileDragging;
-    }
-
-    public void setNotifyWhileDragging(boolean notifyWhileDragging) {
-        this.notifyWhileDragging = notifyWhileDragging;
-    }
-
     public T getSelectedMaxValue() {
         return normalizedToValue(normalizedMaxValue);
     }
@@ -417,31 +405,22 @@ public class RangeSeekBar<T extends Number> extends AppCompatImageView {
         void onRangeSeekBarValuesChanged(RangeSeekBar<?> bar, T minValue, T maxValue);
     }
 
-    private static enum Thumb {
+    private enum Thumb {
         MIN, MAX
     }
 
-    private static enum NumberType {
-        LONG, DOUBLE, INTEGER, FLOAT, SHORT, BYTE, BIG_DECIMAL;
+    private enum NumberType {
+        INTEGER, FLOAT, DOUBLE, BIG_DECIMAL;
 
         public static <E extends Number> NumberType fromNumber(E value) throws IllegalArgumentException {
-            if (value instanceof Long) {
-                return LONG;
-            }
             if (value instanceof Double) {
                 return DOUBLE;
-            }
-            if (value instanceof Integer) {
-                return INTEGER;
             }
             if (value instanceof Float) {
                 return FLOAT;
             }
-            if (value instanceof Short) {
-                return SHORT;
-            }
-            if (value instanceof Byte) {
-                return BYTE;
+            if (value instanceof Integer) {
+                return INTEGER;
             }
             if (value instanceof BigDecimal) {
                 return BIG_DECIMAL;
@@ -451,18 +430,12 @@ public class RangeSeekBar<T extends Number> extends AppCompatImageView {
 
         public Number toNumber(double value) {
             switch (this) {
-                case LONG:
-                    return (long) value;
                 case DOUBLE:
                     return value;
+                case FLOAT:
+                    return (float)value;
                 case INTEGER:
                     return (int) value;
-                case FLOAT:
-                    return (float) value;
-                case SHORT:
-                    return (short) value;
-                case BYTE:
-                    return (byte) value;
                 case BIG_DECIMAL:
                     return BigDecimal.valueOf(value);
             }

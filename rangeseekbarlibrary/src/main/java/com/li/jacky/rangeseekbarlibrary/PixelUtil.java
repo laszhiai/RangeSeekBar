@@ -1,4 +1,4 @@
-package com.li.jacky.rangeseekbar;
+package com.li.jacky.rangeseekbarlibrary;
 
 import android.content.Context;
 import android.util.DisplayMetrics;

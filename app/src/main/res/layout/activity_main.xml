@@ -9,14 +9,14 @@
   android:orientation="vertical"
   tools:context="com.li.jacky.rangeseekbar.MainActivity">
 
-    <com.li.jacky.rangeseekbar.RangeSeekBar
+    <com.li.jacky.rangeseekbarlibrary.RangeSeekBar
       android:id="@+id/range_seekbar1"
       android:padding="40dp"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
       android:layout_weight="1"
       android:background="@color/colorAccent"/>
-    <com.li.jacky.rangeseekbar.RangeSeekBar
+    <com.li.jacky.rangeseekbarlibrary.RangeSeekBar
       android:id="@+id/range_seekbar2"
       android:padding="40dp"
       android:layout_width="match_parent"
@@ -24,7 +24,7 @@
       app:MaxValue="100.0000000"
       android:layout_weight="1"
       android:background="@color/colorAccent"/>
-    <com.li.jacky.rangeseekbar.RangeSeekBar
+    <com.li.jacky.rangeseekbarlibrary.RangeSeekBar
       android:id="@+id/range_seekbar3"
       android:padding="40dp"
       android:layout_width="match_parent"
