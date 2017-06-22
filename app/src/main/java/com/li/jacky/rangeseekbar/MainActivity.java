@@ -7,20 +7,17 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
 import com.li.jacky.rangeseekbar.RangeSeekBar.OnRangeSeekBarChangeListener;
+import java.math.BigDecimal;
 
 public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        RangeSeekBar<Double> sb = (RangeSeekBar<Double>) findViewById(R.id.range_seekbar);
-        sb.setOnRangeSeekBarChangeListener(new OnRangeSeekBarChangeListener<Double>() {
-            @Override
-            public void onRangeSeekBarValuesChanged(RangeSeekBar<?> bar, Double minValue, Double maxValue) {
-                Log.i("mtag", "onRangeSeekBarValuesChanged:      " + minValue + "  " + maxValue);
 
-            }
-        });
+        setContentView(R.layout.activity_main);
+        RangeSeekBar<Integer> sb1 = (RangeSeekBar<Integer>) findViewById(R.id.range_seekbar1);
+        RangeSeekBar<Double> sb2 = (RangeSeekBar<Double>) findViewById(R.id.range_seekbar2);
+        RangeSeekBar<BigDecimal> sb7 = (RangeSeekBar<BigDecimal>) findViewById(R.id.range_seekbar3);
     }
 }

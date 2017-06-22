@@ -16,6 +16,7 @@ import android.util.Log;
 import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.ViewConfiguration;
+import java.math.BigDecimal;
 
 /**
  * Created by Jacky on 2017/6/20.
@@ -31,14 +32,14 @@ public class RangeSeekBar<T extends Number> extends AppCompatImageView {
     private static final int DEFAULT_TEXT_SIZE_IN_DP = 14;
     private static final int DEFAULT_TEXT_DISTANCE_TO_TOP_IN_DP = 10;
     private static final int SEEKBAR_OUTER_LAYER = 24;
-    private static final int SEEKBAR_INTER_LAYER = 8;
-    private static final int PADDING = 40;
+    private static final int SEEKBAR_INNER_LAYER = 8;
+    private  int mPadding = 0;
     private int mTextSize;
     private static final int TEXT_OFFSET = 10;
     private int mDistanceToTop;
     private int mScaledTouchSlop;
     private RectF mRect;
-    private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Bitmap thumbImage = BitmapFactory.decodeResource(getResources(), R.drawable.seek_thumb_normal);
     private final float thumbWidth = thumbImage.getWidth();
     private final float thumbHalfWidth = 0.5f * thumbWidth;
@@ -52,6 +53,14 @@ public class RangeSeekBar<T extends Number> extends AppCompatImageView {
     private boolean mIsDragging;
     private boolean notifyWhileDragging;
     public static final int ACTION_POINTER_UP = 0x6, ACTION_POINTER_INDEX_MASK = 0x0000ff00, ACTION_POINTER_INDEX_SHIFT = 8;
+    private int numberRange = 0;
+    private int outRadius;
+    private int innerRadius;
+    private int distance;
+    private int outerSeekBarColor = Color.parseColor("#F2F4F5");
+    private int innerSeekBarColor = Color.parseColor("#cccccc");
+    private int innerActiveSeekBarColor = Color.parseColor("#007aff");
+    private NumberType mNumberType;
 
     public RangeSeekBar(Context context) {
         super(context);
@@ -81,7 +90,10 @@ public class RangeSeekBar<T extends Number> extends AppCompatImageView {
 
         mTextSize = PixelUtil.dpToPx(context, DEFAULT_TEXT_SIZE_IN_DP);
         mRect = new RectF();
-
+        mPadding = (getPaddingLeft() + getPaddingRight()) / 2;
+        outRadius = PixelUtil.dpToPx(getContext(), SEEKBAR_OUTER_LAYER / 2);
+        innerRadius = PixelUtil.dpToPx(getContext(), SEEKBAR_INNER_LAYER / 2);
+        distance = PixelUtil.dpToPx(getContext(), (SEEKBAR_OUTER_LAYER - SEEKBAR_INNER_LAYER) / 2);
 
         setFocusable(true);
         setFocusableInTouchMode(true);
@@ -120,6 +132,7 @@ public class RangeSeekBar<T extends Number> extends AppCompatImageView {
     private void setValuePrimAndNumberType() {
         minValuePrim = absoluteMinValue.doubleValue();
         maxValuePrim = absoluteMaxValue.doubleValue();
+        mNumberType = NumberType.fromNumber(absoluteMaxValue);
     }
 
     @Override
@@ -139,39 +152,45 @@ public class RangeSeekBar<T extends Number> extends AppCompatImageView {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-
-        drawSeekBar(canvas);
-        //绘制按钮
         float minSeekValue = getSeekPosition(normalizedMinValue);
         float maxSeekValue = getSeekPosition(normalizedMaxValue);
+
+        drawSeekBar(canvas, minSeekValue, maxSeekValue );
+        //绘制按钮
         drawThumb(minSeekValue, canvas);
         drawThumb(maxSeekValue, canvas);
         //绘制文字
-        paint.setTextSize(mTextSize);
-        paint.setColor(Color.parseColor("#1a1a1a"));
-        setThumbValue(absoluteMinValue.toString(), minSeekValue, canvas);
-        setThumbValue(absoluteMaxValue.toString(), maxSeekValue, canvas);
+        mPaint.setTextSize(mTextSize);
+        mPaint.setColor(Color.parseColor("#1a1a1a"));
+        setThumbValue(normalizedToValue(normalizedMinValue)+"", minSeekValue, canvas);
+        setThumbValue(normalizedToValue(normalizedMaxValue)+"", maxSeekValue, canvas);
 
     }
 
-    private void drawSeekBar(Canvas canvas) {
-        paint.setStyle(Style.FILL);
-        boolean selectedValuesAreDefault = (getSelectedMinValue().equals(getAbsoluteMinValue()) &&
-            getSelectedMaxValue().equals(getAbsoluteMaxValue()));
+    private void drawSeekBar(Canvas canvas, float minSeekValue, float maxSeekValue) {
+        mPaint.setStyle(Style.FILL);
 
-        int colorToUseForButtonsAndHighlightedLine = selectedValuesAreDefault ?
-            Color.GRAY : Color.BLUE;
+        mPaint.setColor(outerSeekBarColor);
+        float outLeft = mPadding + thumbHalfWidth;
+        int outTop = getHeight() / 2 - outRadius;
+        float outRight = getWidth() - mPadding - thumbHalfWidth;
+        int outBottom = getHeight() / 2 + outRadius;
+        mRect.set(outLeft - distance, outTop, outRight + distance, outBottom);
+        canvas.drawRoundRect(mRect, outRadius, outRadius, mPaint);
 
-        paint.setColor(colorToUseForButtonsAndHighlightedLine);
-        mRect.set(PADDING+ thumbHalfWidth, getHeight() / 2 - PixelUtil.dpToPx(getContext(), SEEKBAR_OUTER_LAYER / 2),
-            getWidth() - PADDING - thumbHalfWidth, getHeight() / 2 + PixelUtil.dpToPx(getContext(), SEEKBAR_OUTER_LAYER / 2));
-        canvas.drawRect(mRect, paint);
+        mPaint.setColor(innerSeekBarColor);
+        mRect.set(outLeft, outTop + distance, outRight,outBottom - distance);
+        canvas.drawRoundRect(mRect, innerRadius, innerRadius, mPaint);
+
+        mPaint.setColor(innerActiveSeekBarColor);
+        mRect.set(minSeekValue, outTop + distance, maxSeekValue, outBottom - distance);
+        canvas.drawRect(mRect, mPaint);
     }
 
     private void setThumbValue(String text, float seekValue, Canvas canvas) {
-        float minTextWidth = paint.measureText(text);
-        canvas.drawText(text, seekValue - minTextWidth / 2,
-            getHeight() / 2 - thumbHalfHeight - PixelUtil.dpToPx(getContext(), TEXT_OFFSET), paint);
+        float textWidth = mPaint.measureText(text);
+        canvas.drawText(text, seekValue - textWidth / 2,
+            getHeight() / 2 - thumbHalfHeight - PixelUtil.dpToPx(getContext(), TEXT_OFFSET), mPaint);
     }
 
     /**
@@ -179,7 +198,7 @@ public class RangeSeekBar<T extends Number> extends AppCompatImageView {
      * @param seekValue 滑动百分比
      */
     private void drawThumb(float seekValue, Canvas canvas) {
-        canvas.drawBitmap(thumbImage, seekValue - thumbHalfWidth, getHeight() / 2 - thumbHalfHeight, paint);
+        canvas.drawBitmap(thumbImage, seekValue - thumbHalfWidth, getHeight() / 2 - thumbHalfHeight, mPaint);
     }
 
     @Override
@@ -315,12 +334,16 @@ public class RangeSeekBar<T extends Number> extends AppCompatImageView {
         invalidate();
     }
 
+    /**
+     * @param xPosition x坐标
+     * @return      seekbar滑动百分比
+     */
     private double screenToNormalized(float xPosition) {
         int width = getWidth();
-        if (width <= 2 * PADDING) {
+        if (width <= 2 * mPadding) {
             return 0d;
         } else {
-            double result = (xPosition - PADDING - thumbHalfWidth) / (width - 2 * PADDING - thumbWidth);
+            double result = (xPosition - mPadding - thumbHalfWidth) / (width - 2 * mPadding - thumbWidth);
             return Math.min(1d, Math.max(0d, result));
         }
     }
@@ -331,14 +354,22 @@ public class RangeSeekBar<T extends Number> extends AppCompatImageView {
         }
     }
 
+    /**
+     * @param seekPercent seekbar移动的百分比
+     * @return 横坐标
+     */
     private float getSeekPosition(double seekPercent) {
-        return (float) (seekPercent * (getWidth() - 2 * PADDING - thumbWidth) + PADDING + thumbHalfWidth);
+        return (float) (seekPercent * (getWidth() - 2 * mPadding - thumbWidth) + mPadding + thumbHalfWidth);
     }
 
+    /**
+     * @param normalized seekbar移动的百分比
+     * @return 显示值
+     */
+    @SuppressWarnings("unchecked")
     private T normalizedToValue(double normalized) {
         double v = minValuePrim + normalized * (maxValuePrim - minValuePrim);
-        //return (T) numberType.toNumber(Math.round(v * 100) / 100d);
-        return (T) Double.valueOf(v);
+        return (T) mNumberType.toNumber(Math.round(v * 100) / 100d);
     }
 
     private final void onSecondaryPointerUp(MotionEvent ev) {
@@ -388,5 +419,54 @@ public class RangeSeekBar<T extends Number> extends AppCompatImageView {
 
     private static enum Thumb {
         MIN, MAX
+    }
+
+    private static enum NumberType {
+        LONG, DOUBLE, INTEGER, FLOAT, SHORT, BYTE, BIG_DECIMAL;
+
+        public static <E extends Number> NumberType fromNumber(E value) throws IllegalArgumentException {
+            if (value instanceof Long) {
+                return LONG;
+            }
+            if (value instanceof Double) {
+                return DOUBLE;
+            }
+            if (value instanceof Integer) {
+                return INTEGER;
+            }
+            if (value instanceof Float) {
+                return FLOAT;
+            }
+            if (value instanceof Short) {
+                return SHORT;
+            }
+            if (value instanceof Byte) {
+                return BYTE;
+            }
+            if (value instanceof BigDecimal) {
+                return BIG_DECIMAL;
+            }
+            throw new IllegalArgumentException("Number class '" + value.getClass().getName() + "' is not supported");
+        }
+
+        public Number toNumber(double value) {
+            switch (this) {
+                case LONG:
+                    return (long) value;
+                case DOUBLE:
+                    return value;
+                case INTEGER:
+                    return (int) value;
+                case FLOAT:
+                    return (float) value;
+                case SHORT:
+                    return (short) value;
+                case BYTE:
+                    return (byte) value;
+                case BIG_DECIMAL:
+                    return BigDecimal.valueOf(value);
+            }
+            throw new InstantiationError("can't convert " + this + " to a Number object");
+        }
     }
 }

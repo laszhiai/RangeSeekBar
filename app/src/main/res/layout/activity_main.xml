@@ -1,19 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout
+<LinearLayout
   xmlns:android="http://schemas.android.com/apk/res/android"
   xmlns:app="http://schemas.android.com/apk/res-auto"
   xmlns:tools="http://schemas.android.com/tools"
   android:id="@+id/layout"
   android:layout_width="match_parent"
   android:layout_height="match_parent"
+  android:orientation="vertical"
   tools:context="com.li.jacky.rangeseekbar.MainActivity">
 
     <com.li.jacky.rangeseekbar.RangeSeekBar
-      android:id="@+id/range_seekbar"
-      app:MinValue= "1.0"
-      app:MaxValue= "200.0"
+      android:id="@+id/range_seekbar1"
+      android:padding="40dp"
       android:layout_width="match_parent"
-      android:layout_height="200dp"
+      android:layout_height="wrap_content"
+      android:layout_weight="1"
+      android:background="@color/colorAccent"/>
+    <com.li.jacky.rangeseekbar.RangeSeekBar
+      android:id="@+id/range_seekbar2"
+      android:padding="40dp"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      app:MaxValue="100.0000000"
+      android:layout_weight="1"
+      android:background="@color/colorAccent"/>
+    <com.li.jacky.rangeseekbar.RangeSeekBar
+      android:id="@+id/range_seekbar3"
+      android:padding="40dp"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_weight="1"
+      app:MaxValue="10e8"
       android:background="@color/colorAccent"/>
 
-</android.support.constraint.ConstraintLayout>
+</LinearLayout>
