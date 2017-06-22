@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:app="http://schemas.android.com/apk/res-auto"
+  xmlns:tools="http://schemas.android.com/tools"
+  android:id="@+id/layout"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  tools:context="com.li.jacky.rangeseekbar.MainActivity">
+
+    <com.li.jacky.rangeseekbar.RangeSeekBar
+      android:id="@+id/range_seekbar"
+      app:MinValue= "1.0"
+      app:MaxValue= "200.0"
+      android:layout_width="match_parent"
+      android:layout_height="200dp"
+      android:background="@color/colorAccent"/>
+
+</android.support.constraint.ConstraintLayout>
