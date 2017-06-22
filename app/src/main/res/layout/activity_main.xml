@@ -15,6 +15,8 @@
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
       android:layout_weight="1"
+      app:thumbResId="@drawable/seek_thumb"
+      app:singleThumb="true"
       android:background="@color/colorAccent"/>
     <com.li.jacky.rangeseekbarlibrary.RangeSeekBar
       android:id="@+id/range_seekbar2"
@@ -22,6 +24,7 @@
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
       app:MaxValue="100.0000000"
+      app:thumbResId="@drawable/seek_thumb"
       android:layout_weight="1"
       android:background="@color/colorAccent"/>
     <com.li.jacky.rangeseekbarlibrary.RangeSeekBar
@@ -30,6 +33,7 @@
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
       android:layout_weight="1"
+      app:thumbResId="@drawable/seek_thumb"
       app:MaxValue="10e8"
       android:background="@color/colorAccent"/>
 

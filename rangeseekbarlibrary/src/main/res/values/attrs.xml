@@ -4,5 +4,6 @@
         <attr name="MinValue" format="integer|float"/>
         <attr name="MaxValue" format="integer|float"/>
         <attr name="singleThumb" format="boolean"/>
+        <attr name="thumbResId" format="reference"/>
     </declare-styleable>
 </resources>
