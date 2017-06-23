@@ -11,15 +11,15 @@ import android.graphics.Paint.Style;
 import android.graphics.RectF;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
-import java.math.BigDecimal;
 
 /**
  * Created by Jacky on 2017/6/20.
- * 区间滑块
+ * 滑块
  */
 
 public class RangeSeekBar<T extends Number> extends View{
@@ -27,7 +27,7 @@ public class RangeSeekBar<T extends Number> extends View{
     private static final Integer DEFAULT_MINIMUM = 0;
     private static final Integer DEFAULT_MAXIMUM = 100;
     private T absoluteMinValue, absoluteMaxValue;
-    private double minValuePrim, maxValuePrim;//最值
+    private double minValuePrim, maxValuePrim;
     private RectF mRect;
     private Paint mPaint;
     private Bitmap thumbImage;
@@ -40,25 +40,26 @@ public class RangeSeekBar<T extends Number> extends View{
     private boolean mIsDragging;
     private boolean mIsSingleMode;
 
-    private int outRadius;
-    private int innerRadius;
-    private int distance;
+    private int mOuterRadius;
+    private int mInnerRadius;
+    private int mSeekBarGap;//内外层seekBar的间距
     private int DEFAULT_TEXT_SIZE_IN_DP = 14;
     private int SEEK_BAR_OUTER_LAYER = 24;
     private int SEEK_BAR_INNER_LAYER = 8;
     private int mPadding = 0;
     private int mTextSize;
-    private int TEXT_OFFSET = 10;
+    private int mTextGap = 10;//数字与滑块间距
     private int mScaledTouchSlop;
+    private int mDecimalPrecision;//数字精度
     public int ACTION_POINTER_INDEX_MASK = 0x0000ff00, ACTION_POINTER_INDEX_SHIFT = 8;
     private int outerSeekBarColor = Color.parseColor("#F2F4F5");
     private int innerSeekBarColor = Color.parseColor("#cccccc");
     private int innerActiveSeekBarColor = Color.parseColor("#007aff");
-    private float thumbWidth;
-    private float thumbHalfWidth;
-    private float thumbHalfHeight;
-    private double normalizedMinValue = 0d;
-    private double normalizedMaxValue = 1d;
+    private float mThumbWidth;
+    private float mThumbHalfWidth;
+    private float mThumbHalfHeight;
+    private double mNormalizedMinValue = 0d;
+    private double mNormalizedMaxValue = 1d;
 
     public RangeSeekBar(Context context) {
         super(context);
@@ -96,14 +97,14 @@ public class RangeSeekBar<T extends Number> extends View{
         mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         thumbImage = BitmapFactory.decodeResource(getResources(), R.drawable.seek_thumb_normal);
         thumbImagePress = BitmapFactory.decodeResource(getResources(), R.drawable.seek_thumb_press);
-        thumbWidth = thumbImage.getWidth();
-        thumbHalfWidth = 0.5f * thumbWidth;
-        thumbHalfHeight = 0.5f * thumbImage.getHeight();
+        mThumbWidth = thumbImage.getWidth();
+        mThumbHalfWidth = 0.5f * mThumbWidth;
+        mThumbHalfHeight = 0.5f * thumbImage.getHeight();
         mTextSize = PixelUtil.dpToPx(context, DEFAULT_TEXT_SIZE_IN_DP);
         mPadding = (getPaddingLeft() + getPaddingRight()) / 2;
-        outRadius = PixelUtil.dpToPx(getContext(), SEEK_BAR_OUTER_LAYER / 2);
-        innerRadius = PixelUtil.dpToPx(getContext(), SEEK_BAR_INNER_LAYER / 2);
-        distance = PixelUtil.dpToPx(getContext(), (SEEK_BAR_OUTER_LAYER - SEEK_BAR_INNER_LAYER) / 2);
+        mOuterRadius = PixelUtil.dpToPx(getContext(), SEEK_BAR_OUTER_LAYER / 2);
+        mInnerRadius = PixelUtil.dpToPx(getContext(), SEEK_BAR_INNER_LAYER / 2);
+        mSeekBarGap = PixelUtil.dpToPx(getContext(), (SEEK_BAR_OUTER_LAYER - SEEK_BAR_INNER_LAYER) / 2);
         setFocusable(true);
         setFocusableInTouchMode(true);
         mScaledTouchSlop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
@@ -140,7 +141,19 @@ public class RangeSeekBar<T extends Number> extends View{
     private void setValuePrimAndNumberType() {
         minValuePrim = absoluteMinValue.doubleValue();
         maxValuePrim = absoluteMaxValue.doubleValue();
+        int minPrecision = getDecimalPrecision(minValuePrim);
+        int maxPrecision = getDecimalPrecision(maxValuePrim);
+        mDecimalPrecision = maxPrecision > minPrecision ? maxPrecision : minPrecision;
         mNumberType = NumberType.fromNumber(absoluteMaxValue);
+    }
+
+    private int getDecimalPrecision(double value) {
+        String minString = String.valueOf(value);
+        if (minString.contains(".")) {
+            String[] split = minString.split("\\.");
+            return split[1].length();
+        }
+        return 0;
     }
 
     @Override
@@ -176,14 +189,14 @@ public class RangeSeekBar<T extends Number> extends View{
 
     @Override
     protected int getSuggestedMinimumHeight() {
-        return thumbImage.getHeight() + PixelUtil.dpToPx(getContext(), TEXT_OFFSET);
+        return thumbImage.getHeight() + PixelUtil.dpToPx(getContext(), mTextGap);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        float minSeekValue = getSeekPosition(normalizedMinValue);
-        float maxSeekValue = getSeekPosition(normalizedMaxValue);
+        float minSeekValue = getSeekPosition(mNormalizedMinValue);
+        float maxSeekValue = getSeekPosition(mNormalizedMaxValue);
 
         drawSeekBar(canvas, minSeekValue, maxSeekValue);
         //绘制按钮
@@ -195,9 +208,9 @@ public class RangeSeekBar<T extends Number> extends View{
         mPaint.setTextSize(mTextSize);
         mPaint.setColor(Color.parseColor("#1a1a1a"));
         if (!mIsSingleMode) {
-            setThumbValue(normalizedToValue(normalizedMinValue) + "", minSeekValue, canvas);
+            setThumbValue(normalizedToValue(mNormalizedMinValue) + "", minSeekValue, canvas);
         }
-        setThumbValue(normalizedToValue(normalizedMaxValue) + "", maxSeekValue, canvas);
+        setThumbValue(normalizedToValue(mNormalizedMaxValue) + "", maxSeekValue, canvas);
 
     }
 
@@ -205,38 +218,37 @@ public class RangeSeekBar<T extends Number> extends View{
         mPaint.setStyle(Style.FILL);
 
         mPaint.setColor(outerSeekBarColor);
-        float outLeft = mPadding + thumbHalfWidth;
-        int outTop = getHeight() / 2 - outRadius;
-        float outRight = getWidth() - mPadding - thumbHalfWidth;
-        int outBottom = getHeight() / 2 + outRadius;
-        mRect.set(outLeft - distance, outTop, outRight + distance, outBottom);
-        canvas.drawRoundRect(mRect, outRadius, outRadius, mPaint);
+        float outLeft = mPadding + mThumbHalfWidth;
+        int outTop = getHeight() / 2 - mOuterRadius;
+        float outRight = getWidth() - mPadding - mThumbHalfWidth;
+        int outBottom = getHeight() / 2 + mOuterRadius;
+        mRect.set(outLeft - mSeekBarGap, outTop, outRight + mSeekBarGap, outBottom);
+        canvas.drawRoundRect(mRect, mOuterRadius, mOuterRadius, mPaint);
 
         mPaint.setColor(innerSeekBarColor);
-        mRect.set(outLeft, outTop + distance, outRight, outBottom - distance);
-        canvas.drawRoundRect(mRect, innerRadius, innerRadius, mPaint);
+        mRect.set(outLeft, outTop + mSeekBarGap, outRight, outBottom - mSeekBarGap);
+        canvas.drawRoundRect(mRect, mInnerRadius, mInnerRadius, mPaint);
 
         mPaint.setColor(innerActiveSeekBarColor);
-        mRect.set(minSeekValue, outTop + distance, maxSeekValue, outBottom - distance);
-        canvas.drawRoundRect(mRect, innerRadius, innerRadius, mPaint);
+        mRect.set(minSeekValue, outTop + mSeekBarGap, maxSeekValue, outBottom - mSeekBarGap);
+        canvas.drawRoundRect(mRect, mInnerRadius, mInnerRadius, mPaint);
     }
 
     private void setThumbValue(String text, float seekValue, Canvas canvas) {
         float textWidth = mPaint.measureText(text);
         canvas.drawText(text, seekValue - textWidth / 2,
-            getHeight() / 2 - thumbHalfHeight - PixelUtil.dpToPx(getContext(), TEXT_OFFSET), mPaint);
+            getHeight() / 2 - mThumbHalfHeight - PixelUtil.dpToPx(getContext(), mTextGap), mPaint);
     }
 
     /**
      * 绘制滑块
-     *
      * @param seekValue 滑动百分比
      */
     private void drawThumb(float seekValue, Canvas canvas, Thumb thumb) {
         if (pressedThumb == thumb) {
-            canvas.drawBitmap(thumbImagePress, seekValue - thumbHalfWidth, getHeight() / 2 - thumbHalfHeight, mPaint);
+            canvas.drawBitmap(thumbImagePress, seekValue - mThumbHalfWidth, getHeight() / 2 - mThumbHalfHeight, mPaint);
         } else {
-            canvas.drawBitmap(thumbImage, seekValue - thumbHalfWidth, getHeight() / 2 - thumbHalfHeight, mPaint);
+            canvas.drawBitmap(thumbImage, seekValue - mThumbHalfWidth, getHeight() / 2 - mThumbHalfHeight, mPaint);
         }
     }
 
@@ -262,11 +274,9 @@ public class RangeSeekBar<T extends Number> extends View{
                 break;
             case MotionEvent.ACTION_MOVE:
                 if (pressedThumb != null) {
-
                     if (mIsDragging) {
                         trackTouchEvent(event);
                     } else {
-                        // Scroll to follow the motion event
                         pointerIndex = event.findPointerIndex(mActivePointerId);
                         final float x = event.getX(pointerIndex);
 
@@ -328,8 +338,8 @@ public class RangeSeekBar<T extends Number> extends View{
      */
     private Thumb evalPressedThumb(float touchX) {
         Thumb result = null;
-        boolean minThumbPressed = isInThumbRange(touchX, normalizedMinValue);
-        boolean maxThumbPressed = isInThumbRange(touchX, normalizedMaxValue);
+        boolean minThumbPressed = isInThumbRange(touchX, mNormalizedMinValue);
+        boolean maxThumbPressed = isInThumbRange(touchX, mNormalizedMaxValue);
         if (minThumbPressed && maxThumbPressed) {
             result = (touchX / getWidth() > 0.5f) ? Thumb.MIN : Thumb.MAX;
         } else if (minThumbPressed) {
@@ -341,7 +351,7 @@ public class RangeSeekBar<T extends Number> extends View{
     }
 
     private boolean isInThumbRange(float touchX, double normalizedThumbValue) {
-        return Math.abs(touchX - getSeekPosition(normalizedThumbValue)) <= thumbHalfWidth;
+        return Math.abs(touchX - getSeekPosition(normalizedThumbValue)) <= mThumbHalfWidth;
     }
 
     void onStartTrackingTouch() {
@@ -352,24 +362,27 @@ public class RangeSeekBar<T extends Number> extends View{
         mIsDragging = false;
     }
 
-    private final void trackTouchEvent(MotionEvent event) {
-        final int pointerIndex = event.findPointerIndex(mActivePointerId);
-        final float x = event.getX(pointerIndex);
+    private void trackTouchEvent(MotionEvent event) {
+        int pointerIndex = event.findPointerIndex(mActivePointerId);
+        Log.i("mtag", "trackTouchEvent:     " + pointerIndex);
+        if (pointerIndex > -1) {
+            final float x = event.getX(pointerIndex);
 
-        if (Thumb.MIN.equals(pressedThumb)) {
-            setNormalizedMinValue(screenToNormalized(x));
-        } else if (Thumb.MAX.equals(pressedThumb)) {
-            setNormalizedMaxValue(screenToNormalized(x));
+            if (Thumb.MIN.equals(pressedThumb)) {
+                setNormalizedMinValue(screenToNormalized(x));
+            } else if (Thumb.MAX.equals(pressedThumb)) {
+                setNormalizedMaxValue(screenToNormalized(x));
+            }
         }
     }
 
     private void setNormalizedMinValue(double value) {
-        normalizedMinValue = Math.max(0d, Math.min(1d, Math.min(value, normalizedMaxValue)));
+        mNormalizedMinValue = Math.max(0d, Math.min(1d, Math.min(value, mNormalizedMaxValue)));
         invalidate();
     }
 
     private void setNormalizedMaxValue(double value) {
-        normalizedMaxValue = Math.max(0d, Math.min(1d, Math.max(value, normalizedMinValue)));
+        mNormalizedMaxValue = Math.max(0d, Math.min(1d, Math.max(value, mNormalizedMinValue)));
         invalidate();
     }
 
@@ -382,7 +395,7 @@ public class RangeSeekBar<T extends Number> extends View{
         if (width <= 2 * mPadding) {
             return 0d;
         } else {
-            double result = (xPosition - mPadding - thumbHalfWidth) / (width - 2 * mPadding - thumbWidth);
+            double result = (xPosition - mPadding - mThumbHalfWidth) / (width - 2 * mPadding - mThumbWidth);
             return Math.min(1d, Math.max(0d, result));
         }
     }
@@ -398,7 +411,7 @@ public class RangeSeekBar<T extends Number> extends View{
      * @return 横坐标
      */
     private float getSeekPosition(double seekPercent) {
-        return (float) (seekPercent * (getWidth() - 2 * mPadding - thumbWidth) + mPadding + thumbHalfWidth);
+        return (float) (seekPercent * (getWidth() - 2 * mPadding - mThumbWidth) + mPadding + mThumbHalfWidth);
     }
 
     /**
@@ -408,12 +421,12 @@ public class RangeSeekBar<T extends Number> extends View{
     @SuppressWarnings("unchecked")
     private T normalizedToValue(double normalized) {
         double v = minValuePrim + normalized * (maxValuePrim - minValuePrim);
-        return (T) mNumberType.toNumber(Math.round(v * 100) / 100d);
+        double precision = Math.pow(10, mDecimalPrecision);
+        return (T) mNumberType.toNumber(Math.round(v * precision) / precision);
     }
 
-    private final void onSecondaryPointerUp(MotionEvent ev) {
+    private void onSecondaryPointerUp(MotionEvent ev) {
         final int pointerIndex = (ev.getAction() & ACTION_POINTER_INDEX_MASK) >> ACTION_POINTER_INDEX_SHIFT;
-
         final int pointerId = ev.getPointerId(pointerIndex);
         if (pointerId == mActivePointerId) {
             final int newPointerIndex = pointerIndex == 0 ? 1 : 0;
@@ -427,11 +440,11 @@ public class RangeSeekBar<T extends Number> extends View{
     }
 
     public T getSelectedMaxValue() {
-        return normalizedToValue(normalizedMaxValue);
+        return normalizedToValue(mNormalizedMaxValue);
     }
 
     private T getSelectedMinValue() {
-        return normalizedToValue(normalizedMinValue);
+        return normalizedToValue(mNormalizedMinValue);
     }
 
 
@@ -441,6 +454,16 @@ public class RangeSeekBar<T extends Number> extends View{
 
     public T getAbsoluteMaxValue() {
         return absoluteMaxValue;
+    }
+
+    public void setAbsoluteMinValue(T absoluteMinValue) {
+        this.absoluteMinValue = absoluteMinValue;
+        setValuePrimAndNumberType();
+    }
+
+    public void setAbsoluteMaxValue(T absoluteMaxValue) {
+        this.absoluteMaxValue = absoluteMaxValue;
+        setValuePrimAndNumberType();
     }
 
     public interface OnRangeSeekBarChangeListener<T> {
@@ -453,34 +476,44 @@ public class RangeSeekBar<T extends Number> extends View{
     }
 
     private enum NumberType{
-        INTEGER, FLOAT, DOUBLE, BIG_DECIMAL;
+        BYTE, SHORT, INTEGER, LONG, FLOAT, DOUBLE;
 
         public static <E extends Number> NumberType fromNumber(E value) throws IllegalArgumentException {
+            if (value instanceof Byte) {
+                return BYTE;
+            }
+            if (value instanceof Short) {
+                return SHORT;
+            }
+            if (value instanceof Integer) {
+                return INTEGER;
+            }
+            if (value instanceof Long) {
+                return LONG;
+            }
             if (value instanceof Double) {
                 return DOUBLE;
             }
             if (value instanceof Float) {
                 return FLOAT;
             }
-            if (value instanceof Integer) {
-                return INTEGER;
-            }
-            if (value instanceof BigDecimal) {
-                return BIG_DECIMAL;
-            }
             throw new IllegalArgumentException("Number class '" + value.getClass().getName() + "' is not supported");
         }
 
         public Number toNumber(double value) {
             switch (this) {
+                case BYTE:
+                    return (byte) value;
+                case SHORT:
+                    return (short) value;
+                case INTEGER:
+                    return (int) value;
+                case LONG:
+                    return (long) value;
                 case DOUBLE:
                     return value;
                 case FLOAT:
                     return (float) value;
-                case INTEGER:
-                    return (int) value;
-                case BIG_DECIMAL:
-                    return BigDecimal.valueOf(value);
             }
             throw new InstantiationError("can't convert " + this + " to a Number object");
         }

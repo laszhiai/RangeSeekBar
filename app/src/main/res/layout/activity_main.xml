@@ -8,7 +8,6 @@
   android:layout_height="match_parent"
   android:orientation="vertical"
   tools:context="com.li.jacky.rangeseekbar.MainActivity">
-
     <com.li.jacky.rangeseekbarlibrary.RangeSeekBar
       android:id="@+id/range_seekbar1"
       android:padding="40dp"
@@ -23,18 +22,10 @@
       android:padding="40dp"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
-      app:MaxValue="100.0000000"
+      app:MaxValue="100.0000001"
       app:thumbResId="@drawable/seek_thumb"
       android:layout_weight="1"
       android:background="@color/colorAccent"/>
-    <com.li.jacky.rangeseekbarlibrary.RangeSeekBar
-      android:id="@+id/range_seekbar3"
-      android:padding="40dp"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_weight="1"
-      app:thumbResId="@drawable/seek_thumb"
-      app:MaxValue="10e8"
-      android:background="@color/colorAccent"/>
+
 
 </LinearLayout>
